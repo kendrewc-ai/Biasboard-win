@@ -1,0 +1,52 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Build and distribution output
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Logs, temporary files and backups
+*.log
+*.tmp
+*.temp
+*.bak
+~$*
+.tmp/
+temp/
+*.corrupt-*.json
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+.env
+
+# OS clutter
+Thumbs.db
+desktop.ini
+
+# Runtime user data: only created in opt-in portable mode (root folder only).
+# Normal runs store data in the per-user app-data folder, outside this repo.
+/data/
+
+# Keep tracked: main.py, src/, tests/, README.md, the .bat launcher,
+# .gitignore itself, and any future config templates or app resources.

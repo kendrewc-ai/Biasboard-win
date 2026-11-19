@@ -5,6 +5,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+from config import MIN_WINDOW_SIZE  # noqa: E402
 from geometry import (  # noqa: E402
     clamp_geometry,
     ease_out,
@@ -80,6 +81,12 @@ class TestSliderMath(unittest.TestCase):
         self.assertEqual(values, sorted(values))
         self.assertEqual(values[0], 0.0)
         self.assertEqual(values[-1], 1.0)
+
+
+class TestWindowLimits(unittest.TestCase):
+    def test_resize_floor_is_small(self):
+        self.assertLessEqual(MIN_WINDOW_SIZE[0], 300)
+        self.assertLessEqual(MIN_WINDOW_SIZE[1], 200)
 
 
 class TestSliderFillFromNeutral(unittest.TestCase):

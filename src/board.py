@@ -5,6 +5,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 
 from config import (
+    CONTENT_WIDTH,
     FONT_ICON,
     FONT_MONO,
     FONT_MONO_SMALL,
@@ -24,25 +25,40 @@ from tooltip import Tooltip
 
 
 class MinimalScrollbar(tk.Canvas):
-    """One thin grey line on white: no arrows, no trough, no chunky handle."""
+    """One thin grey line on white, for either axis."""
 
-    def __init__(self, parent, command):
-        super().__init__(
-            parent, width=10, bg=THEME["panel"],
-            highlightthickness=0, bd=0, cursor="hand2",
-        )
+    def __init__(self, parent, command, orient="vertical"):
+        self._orient = orient
+        if orient == "vertical":
+            super().__init__(
+                parent, width=10, bg=THEME["panel"],
+                highlightthickness=0, bd=0, cursor="hand2",
+            )
+        else:
+            super().__init__(
+                parent, height=10, bg=THEME["panel"],
+                highlightthickness=0, bd=0, cursor="hand2",
+            )
         self._command = command
         self._start = 0.0
         self._end = 1.0
         self._dragging = False
         self._offset = 0
         self._thumb = self.create_line(
-            5, 0, 5, 0, fill="#C7C7CC", width=6, capstyle=tk.ROUND,
+            0, 0, 0, 0, fill="#C7C7CC", width=6, capstyle=tk.ROUND,
         )
         self.bind("<ButtonPress-1>", self._on_press)
         self.bind("<B1-Motion>", self._on_motion)
         self.bind("<ButtonRelease-1>", self._on_release)
         self.bind("<Configure>", lambda _e: self._draw())
+
+    def _length(self):
+        if self._orient == "vertical":
+            return self.winfo_height()
+        return self.winfo_width()
+
+    def _position(self, event):
+        return event.y if self._orient == "vertical" else event.x
 
     def set(self, first, last):
         """Tk scroll command: receive visible fraction (first, last)."""
@@ -50,78 +66,137 @@ class MinimalScrollbar(tk.Canvas):
         self._draw()
 
     def _draw(self):
-        top, bottom = scrollbar_thumb(
-            self.winfo_height(), self._start, self._end
-        )
-        self.coords(self._thumb, 5, top, 5, bottom)
+        top, bottom = scrollbar_thumb(self._length(), self._start, self._end)
+        if self._orient == "vertical":
+            self.coords(self._thumb, 5, top, 5, bottom)
+        else:
+            self.coords(self._thumb, top, 5, bottom, 5)
 
     def _on_press(self, event):
-        top, bottom = scrollbar_thumb(
-            self.winfo_height(), self._start, self._end
-        )
-        if top <= event.y <= bottom:
+        top, bottom = scrollbar_thumb(self._length(), self._start, self._end)
+        position = self._position(event)
+        self.grab_set()  # keep receiving motion even outside the thin bar
+        if top <= position <= bottom:
             self._dragging = True
-            self._offset = event.y - top
+            self._offset = position - top
         else:
-            self._jump(event.y - (bottom - top) / 2)
+            self._jump(position - (bottom - top) / 2)
+            self.grab_release()
 
     def _on_motion(self, event):
         if self._dragging:
-            self._jump(event.y - self._offset)
+            self._jump(self._position(event) - self._offset)
 
     def _on_release(self, _event):
         self._dragging = False
+        if self.grab_current() is self:
+            self.grab_release()
 
-    def _jump(self, y):
-        height = self.winfo_height()
-        top, bottom = scrollbar_thumb(height, self._start, self._end)
-        length = bottom - top
-        fraction = (y - length / 2) / max(1, height - length)
+    def _jump(self, top):
+        """Move so the thumb starts at `top` (pixels along the bar)."""
+        length = self._length()
+        _, bottom = scrollbar_thumb(length, self._start, self._end)
+        fraction = top / max(1, length - bottom)
         self._command("moveto", max(0.0, min(1.0, fraction)))
 
 
 class ScrollArea(tk.Frame):
-    """Vertical scroll area that keeps rows full width."""
+    """Scrollable canvas with thin overlay bars on both axes."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, content_width=CONTENT_WIDTH):
         super().__init__(parent, bg=THEME["bg"])
+        self._content_width = content_width
         self.canvas = tk.Canvas(self, bg=THEME["bg"], highlightthickness=0, bd=0)
-        self.bar = MinimalScrollbar(self, self.canvas.yview)
+        self.vbar = MinimalScrollbar(self, self.canvas.yview, "vertical")
+        self.hbar = MinimalScrollbar(self, self.canvas.xview, "horizontal")
         self.inner = tk.Frame(self.canvas, bg=THEME["bg"])
         self._window = self.canvas.create_window(
-            (0, 0), window=self.inner, anchor="nw"
+            (0, 0), window=self.inner, anchor="nw", width=content_width
         )
+        self.canvas.configure(
+            yscrollcommand=self.vbar.set, xscrollcommand=self.hbar.set,
+            yscrollincrement=24, xscrollincrement=40,
+        )
+        self._y_remainder = 0.0
+        self._x_remainder = 0.0
         self.inner.bind("<Configure>", self._on_inner_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
-        self.canvas.configure(yscrollcommand=self.bar.set)
-        self.canvas.bind("<MouseWheel>", self._on_wheel)
-        self.inner.bind("<MouseWheel>", self._on_wheel)
+        # Wheel events go to the focused widget, so bind at the window level.
+        # Each area ignores events that did not happen inside its own content.
+        top = self.winfo_toplevel()
+        top.bind("<MouseWheel>", self._on_wheel, add="+")
+        top.bind("<Shift-MouseWheel>", self._on_shift_wheel, add="+")
+        top.bind("<Button-4>", self._on_wheel_up, add="+")
+        top.bind("<Button-5>", self._on_wheel_down, add="+")
+        # Bars first, so the canvas takes whatever space is left.
+        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     def _on_inner_configure(self, _event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        self._update_bar()
+        self._update_bars()
 
     def _on_canvas_configure(self, event):
-        self.canvas.itemconfig(self._window, width=event.width)
-        self._update_bar()
+        # Keep a stable content width; a narrower window scrolls sideways.
+        width = max(self._content_width, event.width - 12)
+        self.canvas.itemconfig(self._window, width=width)
+        self._update_bars()
 
-    def _update_bar(self):
-        """Show the thin bar only when the rows do not fit."""
+    def _update_bars(self):
+        """Show each thin bar only when that axis has hidden content."""
         region = self.canvas.bbox("all")
-        if region and region[3] - region[1] > self.canvas.winfo_height() + 2:
-            self.bar.pack(side=tk.RIGHT, fill=tk.Y)
-        else:
-            self.bar.pack_forget()
+        if not region:
+            return
+        needs_x = region[2] - region[0] > self.canvas.winfo_width() + 2
+        needs_y = region[3] - region[1] > self.canvas.winfo_height() + 2
+        x_packed = self.hbar.winfo_manager() == "pack"
+        y_packed = self.vbar.winfo_manager() == "pack"
+        if needs_x and not x_packed:
+            self.hbar.pack(side=tk.BOTTOM, fill=tk.X, before=self.canvas)
+        elif not needs_x and x_packed:
+            self.hbar.pack_forget()
+        if needs_y and not y_packed:
+            self.vbar.pack(side=tk.RIGHT, fill=tk.Y, before=self.canvas)
+        elif not needs_y and y_packed:
+            self.vbar.pack_forget()
 
-    @staticmethod
-    def _on_wheel(event):
-        step = -1 if event.delta > 0 else 1
-        master = event.widget
-        while not isinstance(master, ScrollArea) and master.master:
-            master = master.master
-        if isinstance(master, ScrollArea):
-            master.canvas.yview_scroll(step, "units")
+    def _contains(self, widget):
+        """Is this event widget inside this scroll area?"""
+        current = widget
+        while current is not None:
+            if current is self or current is self.canvas or current is self.inner:
+                return True
+            current = getattr(current, "master", None)
+        return False
+
+    def _on_wheel(self, event):
+        if not self._contains(event.widget):
+            return
+        # Windows sends multiples of 120; touchpads send smaller deltas.
+        amount = self._y_remainder + (getattr(event, "delta", 0) or 0) / 120.0
+        steps = int(amount)
+        self._y_remainder = amount - steps
+        if steps:
+            self.canvas.yview_scroll(-steps, "units")
+
+    def _on_shift_wheel(self, event):
+        if not self._contains(event.widget):
+            return
+        # Shift+wheel and hardware horizontal wheels both arrive here on Tk 8.6.10+.
+        amount = self._x_remainder + (getattr(event, "delta", 0) or 0) / 120.0
+        steps = int(amount)
+        self._x_remainder = amount - steps
+        if steps:
+            self.canvas.xview_scroll(steps, "units")
+
+    def _on_wheel_up(self, event):
+        if self._contains(event.widget):
+            self.canvas.yview_scroll(-1, "units")
+
+    def _on_wheel_down(self, event):
+        if self._contains(event.widget):
+            self.canvas.yview_scroll(1, "units")
 
 
 class BoardView(tk.Frame):
@@ -133,18 +208,17 @@ class BoardView(tk.Frame):
             family=FONT_UI_SMALL[0], size=FONT_UI_SMALL[1]
         )
 
-        header = tk.Frame(self, bg=THEME["panel"], height=48)
-        header.pack(fill=tk.X, side=tk.TOP)
-        tk.Frame(header, bg=THEME["border"], height=1).pack(
+        # Fixed header: controls stay pinned to the window's top-right corner
+        # and never move when the content scrolls or the window shrinks.
+        self.header = tk.Frame(self, bg=THEME["panel"], height=48)
+        self.header.pack(fill=tk.X, side=tk.TOP)
+        self.header.pack_propagate(False)
+        tk.Frame(self.header, bg=THEME["border"], height=1).pack(
             fill=tk.X, side=tk.BOTTOM
         )
-        tk.Label(
-            header, text="Pair Bias Board", bg=THEME["panel"], fg=THEME["text"],
-            font=FONT_TITLE, padx=18,
-        ).pack(side=tk.LEFT)
 
         self.top_button = tk.Button(
-            header, text="On Top", command=app.toggle_topmost,
+            self.header, text="On Top", command=app.toggle_topmost,
             bg=THEME["panel"], fg=THEME["muted"], relief=tk.FLAT, bd=0,
             font=FONT_UI_SMALL, padx=10, cursor="hand2",
             activebackground=THEME["panel_alt"],
@@ -152,19 +226,26 @@ class BoardView(tk.Frame):
         self.top_button.pack(side=tk.RIGHT, pady=8, padx=(0, 14))
 
         IconButton(
-            header, "+", app.open_add_pair, bg=THEME["panel"],
+            self.header, "+", app.open_add_pair, bg=THEME["panel"],
             fg=THEME["accent"], font=FONT_PLUS,
         ).pack(side=tk.RIGHT, pady=8, padx=(0, 4))
         IconButton(
-            header, "⚙", app.open_manage, bg=THEME["panel"],
+            self.header, "⚙", app.open_manage, bg=THEME["panel"],
             fg=THEME["muted"], font=FONT_ICON,
         ).pack(side=tk.RIGHT, pady=8, padx=(0, 2))
+
+        # Packed last so the controls keep their space; the title shrinks.
+        tk.Label(
+            self.header, text="Pair Bias Board", bg=THEME["panel"],
+            fg=THEME["text"], font=FONT_TITLE, padx=18, anchor="w",
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self.scroll = ScrollArea(self)
         self.scroll.pack(fill=tk.BOTH, expand=True)
 
         # Clicking empty board space releases the note box cleanly.
-        for widget in (self, self.scroll.canvas, self.scroll.inner):
+        for widget in (self, self.header, self.scroll.canvas,
+                       self.scroll.inner):
             widget.bind(
                 "<ButtonPress-1>", self._blur_on_outside_click, add="+"
             )

@@ -9,9 +9,9 @@ import json
 import os
 from datetime import datetime
 
-from config import APP_DIR_NAME, DATA_FILE_NAME, DATA_VERSION, DEFAULT_SYMBOL
+from config import DATA_FILE_NAME, DATA_VERSION, DEFAULT_SYMBOL
 from models import Pair
-from validation import normalise_symbol
+from paths import data_directory, ensure_data_dir
 
 
 class StorageError(Exception):
@@ -19,11 +19,8 @@ class StorageError(Exception):
 
 
 def app_data_dir() -> str:
-    """Per-user Windows application data folder (never the install folder)."""
-    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
-    if not base:  # non-Windows fallback, e.g. while running tests elsewhere
-        base = os.path.join(os.path.expanduser("~"), ".pairbiasboard")
-    return os.path.join(base, APP_DIR_NAME)
+    """Resolve the data folder at call time, so moving the app needs no edits."""
+    return data_directory()
 
 
 def data_path(path: str | None = None) -> str:
@@ -107,6 +104,7 @@ def save_data(data: dict, path: str | None = None) -> None:
 def load_data(path: str | None = None) -> tuple[dict, str | None]:
     """Return (data, warning). A corrupt file is backed up, never overwritten."""
     target = data_path(path)
+    ensure_data_dir(os.path.dirname(os.path.abspath(target)))
     if not os.path.exists(target):
         return default_data(), None
 

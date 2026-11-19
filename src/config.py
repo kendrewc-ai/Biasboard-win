@@ -71,7 +71,11 @@ THEME = {
 }
 
 # --- Compact board layout -------------------------------------------------
-MIN_WINDOW_SIZE = (780, 380)
+# Tiny floor so the window can shrink freely; scrollbars reveal hidden content.
+MIN_WINDOW_SIZE = (220, 140)
+# Size used only on the very first launch (no saved geometry yet).
+DEFAULT_WINDOW_SIZE = (800, 460)
+CONTENT_WIDTH = 760  # inner layout width before horizontal scrolling starts
 ROW_HEIGHT = 46
 SLIDER_WIDTH = 260
 SLIDER_HEIGHT = 36

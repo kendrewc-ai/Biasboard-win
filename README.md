@@ -54,7 +54,8 @@ library. There is nothing to `pip install` for normal use.
 
 ## 2. Run the app
 
-In PowerShell:
+In PowerShell, open the folder where you put the app (change the path if your
+folder is somewhere else):
 
 ```powershell
 cd "$HOME\PairBiasBoard"
@@ -78,9 +79,10 @@ To put a shortcut on your Desktop, run this once in PowerShell:
 
 ```powershell
 $ws = New-Object -ComObject WScript.Shell
+$app = (Get-Location).Path
 $sc = $ws.CreateShortcut("$env:USERPROFILE\Desktop\Pair Bias Board.lnk")
-$sc.TargetPath = "$HOME\PairBiasBoard\Run Pair Bias Board.bat"
-$sc.WorkingDirectory = "$HOME\PairBiasBoard"
+$sc.TargetPath = Join-Path $app "Run Pair Bias Board.bat"
+$sc.WorkingDirectory = $app
 $sc.Save()
 ```
 
@@ -128,10 +130,17 @@ The coloured part of the slider always starts at **N (Neutral)**: bearish states
 paint leftwards in red, bullish states paint rightwards in green. No Trade uses
 a muted colour. The short label and bold text also show the selected position.
 
-The window can be dragged anywhere by its title bar, and you can drag an edge
-or corner to resize it. It has a minimum size, so the note boxes never shrink
-out of view. When there are more rows than fit, a thin grey line appears on the
-right — that is the scrollbar. It hides itself again when everything fits.
+The window can be dragged anywhere by its title bar and freely resized, right
+down to a very small size. The header is **fixed**: the Add, settings gear and
+On Top controls stay pinned at the top-right corner and do not move when you
+scroll. The rows below scroll independently.
+
+When content does not fit, a thin grey scrollbar appears on the right and/or
+along the bottom. The mouse wheel scrolls vertically; **Shift + wheel** or a
+horizontal wheel scrolls sideways. High-resolution touchpad deltas are
+accumulated, so scrolling stays smooth instead of jumping. Each bar can be
+dragged directly with the mouse, and both bars hide again when the content
+fits.
 
 ---
 
@@ -192,14 +201,30 @@ visual summary of subjective bias — **not** position size or actual exposure.
 
 ## 6. Where the data is stored
 
-Your data is a JSON file in your own Windows user area, not in the project
-folder:
+By default your data is a JSON file in your own Windows user area, not in the
+project folder:
 
 ```
 %LOCALAPPDATA%\PairBiasBoard\data.json
 ```
 
-In PowerShell, to see the folder:
+### Moving the app (portable mode)
+
+The code has no fixed drive letters or user names. The launcher starts
+`main.py` from its own folder, and the app finds its files relative to that
+folder. You can copy the whole `PairBiasBoard` folder to another folder, another
+drive, or another Windows computer and run it there — no code edits and no
+extra installs (Python + Tkinter are the only requirements).
+
+By default each Windows user keeps their own board in `%LOCALAPPDATA%`. If you
+want the data to travel **with the folder**, close the app and create an empty
+file named `PORTABLE` (no extension) next to `main.py`. On the next start the
+app creates a `data` folder there and uses `data\data.json`. Copy the whole
+folder and your board goes with it. Remove the `PORTABLE` file to switch back
+to the per-user folder; the `data` folder is left alone, so copy `data.json`
+yourself if you want it back.
+
+In PowerShell, to see the default folder:
 
 ```powershell
 explorer "$env:LOCALAPPDATA\PairBiasBoard"
@@ -232,8 +257,8 @@ python -m unittest discover -s tests -v
 ```
 
 The tests cover symbol validation, the six-state mapping, stale logic, JSON
-persistence, window-position repair, and the currency bias / conflict maths.
-They need no internet and no extra packages.
+persistence, portable path resolution, window-position repair, and the currency
+bias / conflict maths. They need no internet and no extra packages.
 
 ---
 
@@ -251,8 +276,8 @@ should still do a quick visual pass:
 - [ ] Reorder, hide, show, and delete a pair (with confirmation).
 - [ ] Edit and clear a note; confirm it does not change the age.
 - [ ] Type directly in the board's note box; confirm it saves without a Save button.
-- [ ] Drag a window edge — resizing works, but it stops at a readable minimum.
-- [ ] With many rows, confirm only a thin grey scrollbar line appears.
+- [ ] Drag a window edge down to a very small size — both scrollbars appear as needed.
+- [ ] Scroll with the wheel and with Shift+wheel; the header buttons stay pinned.
 - [ ] Check bearish colour grows left from N and bullish colour grows right from N.
 - [ ] Click **Reset all to Neutral** and confirm.
 - [ ] Toggle **ON TOP** and check it stays on after a restart.
@@ -276,6 +301,9 @@ python -m pip install pyinstaller
 pyinstaller --onefile --noconsole main.py
 ```
 
+A packaged EXE resolves its own folder from the EXE location, so moving the
+EXE (and the `PORTABLE` marker, if you use it) still needs no code changes.
+
 ---
 
 ## Project files
@@ -285,18 +313,22 @@ PairBiasBoard/
 ├── main.py                     entry point
 ├── Run Pair Bias Board.bat     double-click launcher
 ├── README.md                   this file
+├── .gitignore                  keeps caches and runtime data out of Git
 ├── src/
 │   ├── app.py                  controller: connects views and data
 │   ├── bias.py                 currency bias / conflict maths
 │   ├── board.py                compact board + scroll area
 │   ├── config.py               all settings and the supported-code list
-│   ├── geometry.py             window repair, note fitting, slider maths
+│   ├── geometry.py             window repair, slider and scrollbar maths
+│   ├── iconbutton.py           minimal round header buttons
 │   ├── manage.py               manage window + bias summary
 │   ├── models.py               Pair record
+│   ├── paths.py                portable path resolution
 │   ├── slider.py               reusable six-position slider widget
 │   ├── states.py               the six fixed states
 │   ├── storage.py              safe local JSON save/load
 │   ├── timeutil.py             stale and age helpers
-│   └── tooltip.py              hover tooltip
+│   ├── tooltip.py              hover tooltip
+│   └── validation.py           symbol rules
 └── tests/                      automated checks (standard-library unittest)
 ```

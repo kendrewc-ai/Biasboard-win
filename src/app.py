@@ -5,7 +5,13 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from board import BoardView
-from config import FONT_UI_SMALL, MIN_WINDOW_SIZE, REFRESH_INTERVAL_MS, THEME
+from config import (
+    DEFAULT_WINDOW_SIZE,
+    FONT_UI_SMALL,
+    MIN_WINDOW_SIZE,
+    REFRESH_INTERVAL_MS,
+    THEME,
+)
 from geometry import clamp_geometry
 from manage import ManageWindow
 from models import Pair
@@ -36,9 +42,10 @@ class App:
         if geometry:
             self.root.geometry(geometry)
         else:
-            self.root.geometry(f"{min_w}x{min_h}+60+60")
+            default_w, default_h = DEFAULT_WINDOW_SIZE
+            self.root.geometry(f"{default_w}x{default_h}+60+60")
         self.root.minsize(min_w, min_h)
-        # Free to drag or resize, but never smaller than the readable layout.
+        # Free to drag or resize; a tiny floor only prevents a zero-size window.
         self.root.resizable(True, True)
 
         self.root.attributes(

@@ -154,7 +154,7 @@ class ManageWindow(tk.Toplevel):
             bg=THEME["bg"], fg=THEME["muted"], font=FONT_UI_SMALL,
         ).pack(anchor="w", padx=12, pady=(6, 2))
 
-        self.list_area = ScrollArea(self.pairs_tab)
+        self.list_area = ScrollArea(self.pairs_tab, content_width=820)
         self.list_area.pack(fill=tk.BOTH, expand=True, padx=10, pady=4)
 
         bottom = tk.Frame(self.pairs_tab, bg=THEME["bg"])
