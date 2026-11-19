@@ -43,7 +43,11 @@ class NoteDialog(tk.Toplevel):
         self.entry = tk.Entry(
             self, width=52, bg=THEME["panel"], fg=THEME["text"],
             insertbackground=THEME["text"], relief=tk.FLAT,
-            highlightbackground=THEME["border"], highlightthickness=1,
+            highlightthickness=1,
+            highlightbackground=THEME["border"],
+            highlightcolor=THEME["border"],
+            selectbackground=THEME["accent_soft"],
+            selectforeground=THEME["text"], selectborderwidth=0,
             font=FONT_UI,
         )
         self.entry.insert(0, pair.note)
@@ -101,6 +105,7 @@ class ManageWindow(tk.Toplevel):
         add_box = tk.Frame(
             self.pairs_tab, bg=THEME["panel"], bd=0,
             highlightthickness=1, highlightbackground=THEME["border"],
+            highlightcolor=THEME["border"],
         )
         add_box.pack(fill=tk.X, padx=10, pady=(14, 6))
         tk.Label(
@@ -114,6 +119,9 @@ class ManageWindow(tk.Toplevel):
             entry_row, width=12, bg=THEME["panel"], fg=THEME["text"],
             insertbackground=THEME["text"], relief=tk.FLAT,
             highlightbackground=THEME["border"], highlightthickness=1,
+            highlightcolor=THEME["border"],
+            selectbackground=THEME["accent_soft"],
+            selectforeground=THEME["text"], selectborderwidth=0,
             font=FONT_MONO,
         )
         self.symbol_entry.pack(side=tk.LEFT)
@@ -191,6 +199,7 @@ class ManageWindow(tk.Toplevel):
             row = tk.Frame(
                 self.list_area.inner, bg=THEME["panel"], bd=0,
                 highlightthickness=1, highlightbackground=THEME["border"],
+                highlightcolor=THEME["border"],
             )
             row.pack(fill=tk.X, padx=6, pady=3)
 
@@ -279,6 +288,7 @@ class ManageWindow(tk.Toplevel):
             self.summary_tab, bg=THEME["panel"], fg=THEME["text"],
             relief=tk.FLAT, font=FONT_UI, wrap=tk.WORD,
             highlightbackground=THEME["border"], highlightthickness=1,
+            highlightcolor=THEME["border"],
             padx=12, pady=12, height=18,
         )
         self.summary_text.pack(fill=tk.BOTH, expand=True, padx=14)

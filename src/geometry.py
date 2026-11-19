@@ -40,19 +40,6 @@ def clamp_geometry(text: str, screen_w: int, screen_h: int,
     return format_geometry(width, height, x, y)
 
 
-def fit_text(text: str, font, max_px: int) -> str:
-    """Shorten a note to fit `max_px`, adding a visible ellipsis."""
-    if not text:
-        return ""
-    if font.measure(text) <= max_px:
-        return text
-    for length in range(len(text), 0, -1):
-        candidate = text[:length].rstrip() + "…"
-        if font.measure(candidate) <= max_px:
-            return candidate
-    return "…"
-
-
 def position_x(index: int, width: int, pad: int) -> float:
     """Centre x of one of the six slider positions."""
     return pad + (width - 2 * pad) * index / 5

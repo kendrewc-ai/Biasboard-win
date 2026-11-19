@@ -9,20 +9,12 @@ from geometry import (  # noqa: E402
     clamp_geometry,
     ease_out,
     fill_span,
-    fit_text,
     format_geometry,
     nearest_index,
     parse_geometry,
     position_x,
     scrollbar_thumb,
 )
-
-
-class FakeFont:
-    """Just enough of a Tk font for the pure fitting logic."""
-
-    def measure(self, text):
-        return len(text) * 10
 
 
 class TestGeometryText(unittest.TestCase):
@@ -55,14 +47,6 @@ class TestGeometryText(unittest.TestCase):
 
     def test_invalid_saved_geometry_returns_empty_string(self):
         self.assertEqual(clamp_geometry("oops", 1920, 1080, 760, 360), "")
-
-    def test_fit_text_leaves_short_text_alone(self):
-        self.assertEqual(fit_text("5h level", FakeFont(), 240), "5h level")
-
-    def test_fit_text_truncates_with_ellipsis(self):
-        out = fit_text("a very long note that will not fit", FakeFont(), 100)
-        self.assertTrue(out.endswith("…"))
-        self.assertLessEqual(FakeFont().measure(out), 100)
 
 
 class TestSliderMath(unittest.TestCase):

@@ -126,13 +126,12 @@ Hover the note to see the full text. The Manage window also shows the full note.
 
 The coloured part of the slider always starts at **N (Neutral)**: bearish states
 paint leftwards in red, bullish states paint rightwards in green. No Trade uses
-a muted colour. The short label, bold text and the small blue dot below the
-thumb also show the selected position.
+a muted colour. The short label and bold text also show the selected position.
 
-The window can be dragged anywhere by its title bar. Its size is fixed on
-purpose, so the note boxes never shrink out of view. When there are more rows
-than fit, a thin grey line appears on the right — that is the scrollbar. It
-hides itself again when everything fits.
+The window can be dragged anywhere by its title bar, and you can drag an edge
+or corner to resize it. It has a minimum size, so the note boxes never shrink
+out of view. When there are more rows than fit, a thin grey line appears on the
+right — that is the scrollbar. It hides itself again when everything fits.
 
 ---
 
@@ -166,7 +165,8 @@ Changing a note, order, or visibility does **not** change the bias time.
 You can type directly in the **note box on the board row** — no Save button
 needed. It saves itself about half a second after you stop typing, and
 immediately when you press **Enter** or click away. Editing a note does not
-change the bias time.
+change the bias time. The row does not turn bold or dark while you edit, and
+clicking empty board space releases the note box.
 
 In the Pairs tab of Manage, click the **Note: …** button for a pair. Type your
 note and click **Save**. Click **Clear** (or save an empty box) to remove it.
@@ -251,7 +251,7 @@ should still do a quick visual pass:
 - [ ] Reorder, hide, show, and delete a pair (with confirmation).
 - [ ] Edit and clear a note; confirm it does not change the age.
 - [ ] Type directly in the board's note box; confirm it saves without a Save button.
-- [ ] Try to resize the window — size stays fixed, but you can drag it by the title bar.
+- [ ] Drag a window edge — resizing works, but it stops at a readable minimum.
 - [ ] With many rows, confirm only a thin grey scrollbar line appears.
 - [ ] Check bearish colour grows left from N and bullish colour grows right from N.
 - [ ] Click **Reset all to Neutral** and confirm.

@@ -163,6 +163,12 @@ class BoardView(tk.Frame):
         self.scroll = ScrollArea(self)
         self.scroll.pack(fill=tk.BOTH, expand=True)
 
+        # Clicking empty board space releases the note box cleanly.
+        for widget in (self, self.scroll.canvas, self.scroll.inner):
+            widget.bind(
+                "<ButtonPress-1>", self._blur_on_outside_click, add="+"
+            )
+
     # ---- rows ------------------------------------------------------------
     def rebuild(self, pairs):
         for row in self.rows.values():
@@ -186,7 +192,9 @@ class BoardView(tk.Frame):
     def _make_row(self, pair):
         frame = tk.Frame(
             self.scroll.inner, bg=THEME["panel"], height=ROW_HEIGHT,
-            highlightthickness=1, highlightbackground=THEME["border"], bd=0,
+            bd=0, highlightthickness=1,
+            highlightbackground=THEME["border"],
+            highlightcolor=THEME["border"],  # no dark focus ring on the row
         )
         frame.pack(fill=tk.X, padx=10, pady=3)
         frame.pack_propagate(False)
@@ -217,7 +225,11 @@ class BoardView(tk.Frame):
         note = tk.Entry(
             frame, textvariable=note_var, bg=THEME["panel"],
             fg=THEME["muted"], relief=tk.FLAT,
-            highlightthickness=1, highlightbackground=THEME["border"],
+            highlightthickness=1,
+            highlightbackground=THEME["border"],
+            highlightcolor=THEME["border"],
+            selectbackground=THEME["accent_soft"],
+            selectforeground=THEME["text"], selectborderwidth=0,
             font=self.note_font, width=22,
         )
         note.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10), pady=6)
@@ -258,6 +270,15 @@ class BoardView(tk.Frame):
             if (note_var is not None and row["note"] is not self.focus_get()
                     and note_var.get() != pair.note):
                 note_var.set(pair.note)
+
+    def _blur_on_outside_click(self, event):
+        """Clear a note box when the user clicks non-editing board space."""
+        if isinstance(event.widget, (SixStateSlider, MinimalScrollbar,
+                                     tk.Entry, tk.Text, tk.Button,
+                                     tk.Checkbutton)):
+            return  # slider, another note, or a real control keeps its focus
+        if isinstance(self.focus_get(), tk.Entry):
+            self.focus_set()
 
     def _note_changed(self, pair_id, var):
         self.app.set_note_live(pair_id, var.get())

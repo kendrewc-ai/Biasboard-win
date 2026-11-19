@@ -76,8 +76,6 @@ ROW_HEIGHT = 46
 SLIDER_WIDTH = 260
 SLIDER_HEIGHT = 36
 TIME_WIDTH = 92
-NOTE_WIDTH = 240
-REFRESH_NOTE_MS = 5_000  # re-measure note truncation when the window resizes
 
 REMINDER = "Bias = permission to look for a setup, not an entry signal."
 SUMMARY_DISCLAIMER = (

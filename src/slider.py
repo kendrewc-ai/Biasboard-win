@@ -17,7 +17,6 @@ from tooltip import Tooltip
 PAD = 20
 TRACK_Y = 11
 LABEL_Y = 27
-MARKER_Y = 33
 THUMB_RADIUS = 8
 ANIM_STEPS = 8
 ANIM_DELAY_MS = 18
@@ -80,10 +79,6 @@ class SixStateSlider(tk.Canvas):
                 x, LABEL_Y, text=state_at_index(index)["short"],
                 fill=THEME["muted"], font=FONT_MONO_SMALL,
             ))
-        self._marker = self.create_oval(
-            self._knob_x - 2, MARKER_Y - 2, self._knob_x + 2, MARKER_Y + 2,
-            fill=THEME["accent"], outline="",
-        )
         self._redraw()
 
     def _redraw(self):
@@ -99,16 +94,13 @@ class SixStateSlider(tk.Canvas):
             self.coords(self._fill, fill_start, TRACK_Y, fill_end, TRACK_Y)
         self.itemconfigure(self._fill, fill=colour)
 
-        for item in (self._shadow, self._knob, self._marker):
-            if item is self._marker:
-                self.coords(item, x - 2, MARKER_Y - 2, x + 2, MARKER_Y + 2)
-            else:
-                offset = 1 if item is self._shadow else 0
-                self.coords(
-                    item,
-                    x - THUMB_RADIUS, TRACK_Y - THUMB_RADIUS + offset,
-                    x + THUMB_RADIUS, TRACK_Y + THUMB_RADIUS + offset,
-                )
+        for item in (self._shadow, self._knob):
+            offset = 1 if item is self._shadow else 0
+            self.coords(
+                item,
+                x - THUMB_RADIUS, TRACK_Y - THUMB_RADIUS + offset,
+                x + THUMB_RADIUS, TRACK_Y + THUMB_RADIUS + offset,
+            )
 
         for index, label in enumerate(self._labels):
             selected = index == visual

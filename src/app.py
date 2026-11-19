@@ -38,9 +38,8 @@ class App:
         else:
             self.root.geometry(f"{min_w}x{min_h}+60+60")
         self.root.minsize(min_w, min_h)
-        # The window can be moved freely, but its size stays fixed so notes
-        # are never squeezed out of view.
-        self.root.resizable(False, False)
+        # Free to drag or resize, but never smaller than the readable layout.
+        self.root.resizable(True, True)
 
         self.root.attributes(
             "-topmost", bool(self.data["settings"]["always_on_top"])
