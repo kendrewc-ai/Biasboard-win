@@ -73,3 +73,25 @@ def ease_out(t: float) -> float:
     """Fast-start, soft-land easing for the short knob animation."""
     t = max(0.0, min(1.0, t))
     return 1 - (1 - t) ** 3
+
+
+def fill_span(index: int, width: int, pad: int) -> tuple[float, float]:
+    """Slider colour always grows out of Neutral (index 2).
+
+    Bearish states draw leftwards from N, bullish states draw rightwards.
+    """
+    origin = position_x(2, width, pad)
+    return origin, position_x(index, width, pad)
+
+
+def scrollbar_thumb(height: int, start: float, end: float,
+                    min_len: int = 28) -> tuple[float, float]:
+    """Top and bottom of a thin overlay scrollbar thumb."""
+    height = max(0, height)
+    span = max(0.0, min(1.0, end - start))
+    if span >= 1.0 or height == 0:
+        return 0, height
+    length = min(height, max(min_len, height * span))
+    top = (height - length) * (start / max(1e-9, 1.0 - span))
+    top = max(0.0, min(height - length, top))
+    return top, top + length

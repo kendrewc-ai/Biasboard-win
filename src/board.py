@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import ttk
 
 from config import (
     FONT_ICON,
@@ -13,17 +12,72 @@ from config import (
     FONT_TITLE,
     FONT_UI,
     FONT_UI_SMALL,
-    NOTE_WIDTH,
-    REFRESH_NOTE_MS,
     ROW_HEIGHT,
     THEME,
     TIME_WIDTH,
 )
-from geometry import fit_text
+from geometry import scrollbar_thumb
 from iconbutton import IconButton
 from slider import SixStateSlider
 from timeutil import age_text, is_stale
 from tooltip import Tooltip
+
+
+class MinimalScrollbar(tk.Canvas):
+    """One thin grey line on white: no arrows, no trough, no chunky handle."""
+
+    def __init__(self, parent, command):
+        super().__init__(
+            parent, width=10, bg=THEME["panel"],
+            highlightthickness=0, bd=0, cursor="hand2",
+        )
+        self._command = command
+        self._start = 0.0
+        self._end = 1.0
+        self._dragging = False
+        self._offset = 0
+        self._thumb = self.create_line(
+            5, 0, 5, 0, fill="#C7C7CC", width=6, capstyle=tk.ROUND,
+        )
+        self.bind("<ButtonPress-1>", self._on_press)
+        self.bind("<B1-Motion>", self._on_motion)
+        self.bind("<ButtonRelease-1>", self._on_release)
+        self.bind("<Configure>", lambda _e: self._draw())
+
+    def set(self, first, last):
+        """Tk scroll command: receive visible fraction (first, last)."""
+        self._start, self._end = float(first), float(last)
+        self._draw()
+
+    def _draw(self):
+        top, bottom = scrollbar_thumb(
+            self.winfo_height(), self._start, self._end
+        )
+        self.coords(self._thumb, 5, top, 5, bottom)
+
+    def _on_press(self, event):
+        top, bottom = scrollbar_thumb(
+            self.winfo_height(), self._start, self._end
+        )
+        if top <= event.y <= bottom:
+            self._dragging = True
+            self._offset = event.y - top
+        else:
+            self._jump(event.y - (bottom - top) / 2)
+
+    def _on_motion(self, event):
+        if self._dragging:
+            self._jump(event.y - self._offset)
+
+    def _on_release(self, _event):
+        self._dragging = False
+
+    def _jump(self, y):
+        height = self.winfo_height()
+        top, bottom = scrollbar_thumb(height, self._start, self._end)
+        length = bottom - top
+        fraction = (y - length / 2) / max(1, height - length)
+        self._command("moveto", max(0.0, min(1.0, fraction)))
 
 
 class ScrollArea(tk.Frame):
@@ -32,7 +86,7 @@ class ScrollArea(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent, bg=THEME["bg"])
         self.canvas = tk.Canvas(self, bg=THEME["bg"], highlightthickness=0, bd=0)
-        self.bar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.bar = MinimalScrollbar(self, self.canvas.yview)
         self.inner = tk.Frame(self.canvas, bg=THEME["bg"])
         self._window = self.canvas.create_window(
             (0, 0), window=self.inner, anchor="nw"
@@ -43,13 +97,22 @@ class ScrollArea(tk.Frame):
         self.canvas.bind("<MouseWheel>", self._on_wheel)
         self.inner.bind("<MouseWheel>", self._on_wheel)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.bar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def _on_inner_configure(self, _event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._update_bar()
 
     def _on_canvas_configure(self, event):
         self.canvas.itemconfig(self._window, width=event.width)
+        self._update_bar()
+
+    def _update_bar(self):
+        """Show the thin bar only when the rows do not fit."""
+        region = self.canvas.bbox("all")
+        if region and region[3] - region[1] > self.canvas.winfo_height() + 2:
+            self.bar.pack(side=tk.RIGHT, fill=tk.Y)
+        else:
+            self.bar.pack_forget()
 
     @staticmethod
     def _on_wheel(event):
@@ -99,8 +162,6 @@ class BoardView(tk.Frame):
 
         self.scroll = ScrollArea(self)
         self.scroll.pack(fill=tk.BOTH, expand=True)
-
-        self._note_refresh_loop()
 
     # ---- rows ------------------------------------------------------------
     def rebuild(self, pairs):
@@ -152,16 +213,26 @@ class BoardView(tk.Frame):
         )
         age.pack(side=tk.LEFT)
 
-        note = tk.Label(
-            frame, text="", anchor="w", bg=THEME["panel"],
-            fg=THEME["muted"], font=self.note_font,
+        note_var = tk.StringVar(value=pair.note)
+        note = tk.Entry(
+            frame, textvariable=note_var, bg=THEME["panel"],
+            fg=THEME["muted"], relief=tk.FLAT,
+            highlightthickness=1, highlightbackground=THEME["border"],
+            font=self.note_font, width=22,
         )
-        note.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
-        tooltip = Tooltip(note, lambda p=pair: p.note or "(no note)")
+        note.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10), pady=6)
+        note.bind(
+            "<KeyRelease>",
+            lambda _e, i=pair.id, v=note_var: self._note_changed(i, v),
+        )
+        note.bind("<Return>", lambda _e: self._note_done())
+        note.bind("<FocusOut>", lambda _e: self._note_done())
+        tooltip = Tooltip(note, lambda v=note_var: v.get() or "(no note)")
 
         row.update({
             "frame": frame, "ticker": ticker, "slider": slider,
-            "age": age, "note": note, "tooltip": tooltip,
+            "age": age, "note": note, "note_var": note_var,
+            "tooltip": tooltip,
         })
         return row
 
@@ -183,9 +254,19 @@ class BoardView(tk.Frame):
             row["ticker"].configure(
                 fg=THEME["warning"] if stale else THEME["text"]
             )
-            row["note"].configure(
-                text=fit_text(pair.note, self.note_font, NOTE_WIDTH)
-            )
+            note_var = row.get("note_var")
+            if (note_var is not None and row["note"] is not self.focus_get()
+                    and note_var.get() != pair.note):
+                note_var.set(pair.note)
+
+    def _note_changed(self, pair_id, var):
+        self.app.set_note_live(pair_id, var.get())
+
+    def _note_done(self):
+        self.app.flush_note_save()
+        window = self.app.manage_window
+        if window is not None and window.winfo_exists():
+            window.refresh()
 
     def set_top_button(self, enabled: bool):
         self.top_button.configure(
@@ -193,14 +274,3 @@ class BoardView(tk.Frame):
             fg=THEME["accent"] if enabled else THEME["muted"],
         )
 
-    def _note_refresh_loop(self):
-        """Re-measure note truncation after a resize."""
-        if self.winfo_exists():
-            pairs = self.app.data["pairs"]
-            for pair in pairs:
-                row = self.rows.get(pair.id)
-                if row:
-                    row["note"].configure(
-                        text=fit_text(pair.note, self.note_font, NOTE_WIDTH)
-                    )
-            self.after(REFRESH_NOTE_MS, self._note_refresh_loop)

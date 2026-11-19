@@ -8,11 +8,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from geometry import (  # noqa: E402
     clamp_geometry,
     ease_out,
+    fill_span,
     fit_text,
     format_geometry,
     nearest_index,
     parse_geometry,
     position_x,
+    scrollbar_thumb,
 )
 
 
@@ -94,6 +96,47 @@ class TestSliderMath(unittest.TestCase):
         self.assertEqual(values, sorted(values))
         self.assertEqual(values[0], 0.0)
         self.assertEqual(values[-1], 1.0)
+
+
+class TestSliderFillFromNeutral(unittest.TestCase):
+    def test_neutral_has_no_fill(self):
+        start, end = fill_span(2, 260, 20)
+        self.assertEqual(start, end)
+
+    def test_bearish_fill_goes_left_from_neutral(self):
+        start, end = fill_span(0, 260, 20)
+        self.assertLess(end, start)
+        self.assertEqual(start, position_x(2, 260, 20))
+
+    def test_bullish_fill_goes_right_from_neutral(self):
+        start, end = fill_span(4, 260, 20)
+        self.assertGreater(end, start)
+        self.assertEqual(start, position_x(2, 260, 20))
+
+    def test_no_trade_fill_reaches_far_right(self):
+        start, end = fill_span(5, 260, 20)
+        self.assertEqual(end, position_x(5, 260, 20))
+
+
+class TestMinimalScrollbar(unittest.TestCase):
+    def test_full_content_gives_full_height_thumb(self):
+        top, bottom = scrollbar_thumb(200, 0.0, 1.0)
+        self.assertEqual((top, bottom), (0, 200))
+
+    def test_partial_view_gives_short_thumb(self):
+        top, bottom = scrollbar_thumb(200, 0.5, 1.0)
+        self.assertLess(bottom - top, 200)
+        self.assertGreater(bottom - top, 20)
+
+    def test_thumb_stays_inside_track(self):
+        for start, end in ((0.0, 0.2), (0.4, 0.6), (0.8, 1.0)):
+            top, bottom = scrollbar_thumb(200, start, end)
+            self.assertGreaterEqual(top, 0)
+            self.assertLessEqual(bottom, 200)
+
+    def test_thumb_never_becomes_tiny(self):
+        top, bottom = scrollbar_thumb(200, 0.49, 0.51)
+        self.assertGreaterEqual(bottom - top, 20)
 
 
 if __name__ == "__main__":

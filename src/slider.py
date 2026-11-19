@@ -10,7 +10,7 @@ from __future__ import annotations
 import tkinter as tk
 
 from config import FONT_MONO_SMALL, SLIDER_HEIGHT, SLIDER_WIDTH, THEME
-from geometry import ease_out, nearest_index, position_x
+from geometry import ease_out, fill_span, nearest_index, position_x
 from states import index_of_key, key_at_index, state_at_index
 from tooltip import Tooltip
 
@@ -57,8 +57,9 @@ class SixStateSlider(tk.Canvas):
             PAD, TRACK_Y, self._width - PAD, TRACK_Y,
             fill=THEME["track"], width=4, capstyle=tk.ROUND,
         )
+        fill_start, fill_end = fill_span(self._index, self._width, PAD)
         self._fill = self.create_line(
-            PAD, TRACK_Y, self._knob_x, TRACK_Y,
+            fill_start, TRACK_Y, fill_end, TRACK_Y,
             fill=state_at_index(self._index)["color"],
             width=4, capstyle=tk.ROUND,
         )
@@ -90,7 +91,12 @@ class SixStateSlider(tk.Canvas):
         colour = state_at_index(visual)["color"]
         x = self._knob_x
 
-        self.coords(self._fill, PAD, TRACK_Y, x, TRACK_Y)
+        fill_start, fill_end = fill_span(visual, self._width, PAD)
+        if fill_start == fill_end:
+            self.itemconfigure(self._fill, state="hidden")
+        else:
+            self.itemconfigure(self._fill, state="normal")
+            self.coords(self._fill, fill_start, TRACK_Y, fill_end, TRACK_Y)
         self.itemconfigure(self._fill, fill=colour)
 
         for item in (self._shadow, self._knob, self._marker):

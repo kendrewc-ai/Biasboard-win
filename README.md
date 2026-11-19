@@ -121,8 +121,18 @@ then the **note**.
   when it is on). Your choice is remembered.
 - **+** opens the Add Pair box. The small gear button opens the Manage window.
 
-Notes that are too long are cut short with `…`. Hover the note to see the full
-text. The Manage window also shows the full note.
+Notes that are too long simply scroll inside the small note box on the row.
+Hover the note to see the full text. The Manage window also shows the full note.
+
+The coloured part of the slider always starts at **N (Neutral)**: bearish states
+paint leftwards in red, bullish states paint rightwards in green. No Trade uses
+a muted colour. The short label, bold text and the small blue dot below the
+thumb also show the selected position.
+
+The window can be dragged anywhere by its title bar. Its size is fixed on
+purpose, so the note boxes never shrink out of view. When there are more rows
+than fit, a thin grey line appears on the right — that is the scrollbar. It
+hides itself again when everything fits.
 
 ---
 
@@ -153,8 +163,13 @@ Changing a note, order, or visibility does **not** change the bias time.
 
 ### Edit a note
 
-In the Pairs tab, click the **Note: …** button for a pair. Type your note and
-click **Save**. Click **Clear** (or save an empty box) to remove the note.
+You can type directly in the **note box on the board row** — no Save button
+needed. It saves itself about half a second after you stop typing, and
+immediately when you press **Enter** or click away. Editing a note does not
+change the bias time.
+
+In the Pairs tab of Manage, click the **Note: …** button for a pair. Type your
+note and click **Save**. Click **Clear** (or save an empty box) to remove it.
 The full note appears on the board right after the time.
 
 ### Currency Bias Summary tab
@@ -235,6 +250,10 @@ should still do a quick visual pass:
 - [ ] Add a pair by typing lowercase text; try a duplicate and a bad code.
 - [ ] Reorder, hide, show, and delete a pair (with confirmation).
 - [ ] Edit and clear a note; confirm it does not change the age.
+- [ ] Type directly in the board's note box; confirm it saves without a Save button.
+- [ ] Try to resize the window — size stays fixed, but you can drag it by the title bar.
+- [ ] With many rows, confirm only a thin grey scrollbar line appears.
+- [ ] Check bearish colour grows left from N and bullish colour grows right from N.
 - [ ] Click **Reset all to Neutral** and confirm.
 - [ ] Toggle **ON TOP** and check it stays on after a restart.
 - [ ] Add enough pairs to scroll (more than 8 rows); scroll with the mouse wheel.

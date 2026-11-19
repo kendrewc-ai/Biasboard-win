@@ -18,6 +18,7 @@ class App:
     def __init__(self):
         self.data, warning = load_data()
         self.manage_window = None
+        self._note_save_after = None
 
         self.root = tk.Tk()
         self.root.title("Pair Bias Board")
@@ -37,6 +38,9 @@ class App:
         else:
             self.root.geometry(f"{min_w}x{min_h}+60+60")
         self.root.minsize(min_w, min_h)
+        # The window can be moved freely, but its size stays fixed so notes
+        # are never squeezed out of view.
+        self.root.resizable(False, False)
 
         self.root.attributes(
             "-topmost", bool(self.data["settings"]["always_on_top"])
@@ -166,6 +170,29 @@ class App:
         self._save()  # deliberately does NOT refresh the bias timestamp
         self.board.refresh(self.visible_pairs())
 
+    def set_note_live(self, pair_id, text):
+        """Inline note edit: change memory now, save after typing stops."""
+        pair = self._find(pair_id)
+        if pair is None or pair.note == text:
+            return
+        pair.note = text  # deliberately does NOT refresh the bias timestamp
+        if self._note_save_after is not None:
+            try:
+                self.root.after_cancel(self._note_save_after)
+            except tk.TclError:
+                pass
+        self._note_save_after = self.root.after(500, self.flush_note_save)
+
+    def flush_note_save(self):
+        """Write a pending inline note immediately."""
+        if self._note_save_after is not None:
+            try:
+                self.root.after_cancel(self._note_save_after)
+            except tk.TclError:
+                pass
+            self._note_save_after = None
+        self._save()
+
     def reset_all(self):
         now = to_iso(utc_now())
         for pair in self.data["pairs"]:
@@ -196,6 +223,7 @@ class App:
         window.symbol_entry.focus_set()
 
     def close(self):
+        self.flush_note_save()
         self.data["settings"]["geometry"] = self.root.geometry()
         self._save()
         self.root.destroy()
