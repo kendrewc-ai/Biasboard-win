@@ -295,9 +295,11 @@ The app still runs from source with `python main.py`. Building the EXE needs
 PyInstaller, installed once:
 
 ```powershell
-python -m pip install pyinstaller
-python build.py
+py -3.12 -m pip install pyinstaller
+py -3.12 build.py
 ```
+
+(Use Python 3.12 for the build: that is where PyInstaller was installed.)
 
 `build.py` resolves every path from its own folder, converts the existing
 `icon.png` into `icon.ico` if needed (same artwork, no redesign), and writes:
@@ -315,6 +317,22 @@ dist\Pair Bias Board.exe
   can be copied to another drive.
 - Errors are written to `pairbiasboard.log` beside `data.json` (and shown in a
   dialog), because there is no console to print them to.
+
+### After you change the app
+
+The EXE is a **snapshot** of the code when it was built. It does not update
+itself. After editing `main.py` or anything in `src\`:
+
+1. Close the app if it is running (a running EXE cannot be overwritten).
+2. Run `py -3.12 build.py` in this folder. It replaces `dist\Pair Bias Board.exe`.
+3. Open the new EXE and check it once.
+
+Your pairs, notes and states live in `data.json`, **outside** the EXE, so a
+rebuild never deletes them. If you replace `icon.png`, delete `icon.ico` first
+so `build.py` makes a new ICO from the new artwork.
+
+For quick checks before rebuilding, running `python main.py` uses your latest
+source code immediately — no build needed.
 
 ---
 
