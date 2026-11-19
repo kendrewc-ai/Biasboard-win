@@ -1,6 +1,7 @@
 """Application controller: holds the data and connects the two views."""
 from __future__ import annotations
 
+import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -8,6 +9,7 @@ from board import BoardView
 from config import (
     DEFAULT_WINDOW_SIZE,
     FONT_UI_SMALL,
+    ICON_FILE_NAME,
     MIN_WINDOW_SIZE,
     REFRESH_INTERVAL_MS,
     THEME,
@@ -15,6 +17,7 @@ from config import (
 from geometry import clamp_geometry
 from manage import ManageWindow
 from models import Pair
+from paths import resource_path
 from storage import StorageError, load_data, save_data
 from timeutil import to_iso, utc_now
 from validation import validate_symbol
@@ -28,6 +31,9 @@ class App:
 
         self.root = tk.Tk()
         self.root.title("Pair Bias Board")
+        icon_path = resource_path(ICON_FILE_NAME)
+        if os.path.isfile(icon_path):
+            self.root.iconbitmap(icon_path)
         self.root.configure(bg=THEME["bg"])
         self._configure_styles()
 

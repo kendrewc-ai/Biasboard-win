@@ -26,6 +26,14 @@ def app_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def resource_path(name: str) -> str:
+    """Path to a bundled resource (icon, etc.) in source or onefile builds."""
+    bundle = getattr(sys, "_MEIPASS", None)
+    if bundle:
+        return os.path.join(bundle, name)
+    return os.path.join(app_root(), name)
+
+
 def portable_marker(root: str | None = None) -> str:
     return os.path.join(root or app_root(), PORTABLE_MARKER)
 

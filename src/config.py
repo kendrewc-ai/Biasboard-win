@@ -18,6 +18,14 @@ DATA_FILE_NAME = "data.json"
 DATA_VERSION = 1
 DEFAULT_SYMBOL = "USDJPY"  # used only on the very first launch
 
+# --- Packaged app resources and diagnostics ------------------------------
+# Both files are resolved at runtime from the app folder (or the PyInstaller
+# bundle). The log lives beside data.json: writable in normal and portable mode.
+ICON_FILE_NAME = "icon.ico"
+LOG_FILE_NAME = "pairbiasboard.log"
+LOG_MAX_BYTES = 1_000_000  # rotate to .log.1 once the log reaches ~1 MB
+APP_USER_MODEL_ID = "PairBiasBoard.App.1"  # Windows taskbar/Start grouping
+
 # --- Notes ----------------------------------------------------------------
 MAX_NOTE_CHARS = 200
 

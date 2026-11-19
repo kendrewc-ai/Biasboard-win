@@ -289,20 +289,32 @@ should still do a quick visual pass:
 
 ---
 
-## 9. Optional: make an EXE (not done by default)
+## 9. Build the Windows EXE (no CMD window)
 
-The app runs from Python as-is. Making a single `.exe` file needs an extra
-third-party tool called **PyInstaller**, which is not installed as part of
-this project. If you want an EXE, please ask first — I will explain the steps
-and install it only with your approval. The rough command would be:
+The app still runs from source with `python main.py`. Building the EXE needs
+PyInstaller, installed once:
 
 ```powershell
 python -m pip install pyinstaller
-pyinstaller --onefile --noconsole main.py
+python build.py
 ```
 
-A packaged EXE resolves its own folder from the EXE location, so moving the
-EXE (and the `PORTABLE` marker, if you use it) still needs no code changes.
+`build.py` resolves every path from its own folder, converts the existing
+`icon.png` into `icon.ico` if needed (same artwork, no redesign), and writes:
+
+```
+dist\Pair Bias Board.exe
+```
+
+- `--onefile --windowed` means one portable EXE and **no CMD window**.
+- The icon is set on the EXE (Explorer, taskbar, Start menu) and on the app
+  window itself. To pin it: right-click the EXE or its Start menu shortcut,
+  then **Pin to taskbar** or **Pin to Start**.
+- Data goes to `%LOCALAPPDATA%\PairBiasBoard\`. Put a `PORTABLE` file next to
+  the EXE and data goes to `<app folder>\data\` instead, so the whole folder
+  can be copied to another drive.
+- Errors are written to `pairbiasboard.log` beside `data.json` (and shown in a
+  dialog), because there is no console to print them to.
 
 ---
 
@@ -310,12 +322,16 @@ EXE (and the `PORTABLE` marker, if you use it) still needs no code changes.
 
 ```
 PairBiasBoard/
-├── main.py                     entry point
-├── Run Pair Bias Board.bat     double-click launcher
+├── main.py                     entry point (error logging + Windows app id)
+├── build.py                    builds the windowed EXE from project-relative paths
+├── icon.png                    your existing icon artwork (source)
+├── icon.ico                    Windows icon generated from icon.png
+├── Run Pair Bias Board.bat     double-click launcher for source runs
 ├── README.md                   this file
 ├── .gitignore                  keeps caches and runtime data out of Git
 ├── src/
 │   ├── app.py                  controller: connects views and data
+│   ├── errorlog.py             crash/error logging (no console needed)
 │   ├── bias.py                 currency bias / conflict maths
 │   ├── board.py                compact board + scroll area
 │   ├── config.py               all settings and the supported-code list

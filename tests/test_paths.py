@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -14,6 +15,7 @@ from paths import (  # noqa: E402
     ensure_data_dir,
     is_frozen,
     is_portable,
+    resource_path,
 )
 
 
@@ -62,6 +64,19 @@ class TestPortableMode(unittest.TestCase):
         target = os.path.join(self.root, "nested", "data")
         ensure_data_dir(target)
         self.assertTrue(os.path.isdir(target))
+
+
+class TestResourcePath(unittest.TestCase):
+    def test_source_builds_look_in_the_project_folder(self):
+        self.assertEqual(
+            resource_path("icon.ico"), os.path.join(app_root(), "icon.ico")
+        )
+
+    def test_frozen_builds_look_in_the_bundle(self):
+        with mock.patch.object(sys, "_MEIPASS", "X:/bundle", create=True):
+            self.assertEqual(
+                resource_path("icon.ico"), os.path.join("X:/bundle", "icon.ico")
+            )
 
 
 if __name__ == "__main__":

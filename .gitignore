@@ -12,6 +12,7 @@ ENV/
 # Build and distribution output
 build/
 dist/
+*.spec
 .eggs/
 *.egg-info/
 
